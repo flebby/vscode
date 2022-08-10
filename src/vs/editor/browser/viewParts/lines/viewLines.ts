@@ -24,6 +24,9 @@ import { EditorOption } from 'vs/editor/common/config/editorOptions';
 import { Constants } from 'vs/base/common/uint';
 import { MOUSE_CURSOR_TEXT_CSS_CLASS_NAME } from 'vs/base/browser/ui/mouseCursor/mouseCursor';
 
+// import { StickyWidgetEventHandler } from 'vs/editor/contrib/stickyScroll/browser/stickyWidgetEventHandler';
+// import { StickyScrollWidgetState } from 'vs/editor/contrib/stickyScroll/browser/stickyScrollWidget';
+
 class LastRenderedData {
 
 	private _currentVisibleRange: Range;
@@ -116,6 +119,12 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 	private _horizontalRevealRequest: HorizontalRevealRequest | null;
 	private readonly _lastRenderedData: LastRenderedData;
 
+	// --- widget
+
+	// private _widgetHeight: number;
+	// private _nStickyLines: number;
+	// private _moreLinesThatPrev: boolean;
+
 	constructor(context: ViewContext, linesContent: FastDomNode<HTMLElement>) {
 		super(context);
 		this._linesContent = linesContent;
@@ -155,7 +164,31 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 		this._lastRenderedData = new LastRenderedData();
 
 		this._horizontalRevealRequest = null;
+
+		// --- sticky scroll widget
+		// this._nStickyLines = 0;
+		// this._moreLinesThatPrev = false;
+		// this._widgetHeight = 0;
+		// this._register(StickyWidgetEventHandler.onStickyWidgetChange((e) => this.findWidgetData(e)));
 	}
+
+	/*
+	public findWidgetData(state: StickyScrollWidgetState): void {
+		console.log('state : ', state);
+		if (state.lineNumbers.length > this._nStickyLines) {
+			this._moreLinesThatPrev = true;
+		} else {
+			this._moreLinesThatPrev = false;
+		}
+		this._nStickyLines = state.lineNumbers.length;
+		if (state.lineNumbers.length > 0) {
+			this._widgetHeight = this._lineHeight * (state.lineNumbers.length - 1) + this._lineHeight + state.lastLineRelativePosition;
+		} else {
+			this._widgetHeight = 0;
+		}
+		console.log('widget height in findWidgetData : ', this._widgetHeight);
+	}
+	**/
 
 	public override dispose(): void {
 		this._asyncUpdateLineWidths.dispose();
@@ -260,6 +293,7 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 	public override onRevealRangeRequest(e: viewEvents.ViewRevealRangeRequestEvent): boolean {
 		// Using the future viewport here in order to handle multiple
 		// incoming reveal range requests that might all desire to be animated
+		// TODO : add the data from the line height here and use a provider on the view lines
 		const desiredScrollTop = this._computeScrollTopToRevealRange(this._context.viewLayout.getFutureViewport(), e.source, e.minimalReveal, e.range, e.selections, e.verticalType);
 
 		if (desiredScrollTop === -1) {
@@ -640,6 +674,7 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 
 	private _computeScrollTopToRevealRange(viewport: Viewport, source: string | null | undefined, minimalReveal: boolean, range: Range | null, selections: Selection[] | null, verticalType: viewEvents.VerticalRevealType): number {
 		const viewportStartY = viewport.top;
+		// const bottomOfWidget = viewport.top + this._widgetHeight;
 		const viewportHeight = viewport.height;
 		const viewportEndY = viewportStartY + viewportHeight;
 		let boxIsSingleRange: boolean;
@@ -678,6 +713,18 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 			}
 		}
 
+		/*
+		console.log('In _computeScrollTopToRevealRange');
+		console.log('viewportStartY : ', viewportStartY);
+		console.log('bottomOfWidget : ', bottomOfWidget);
+		console.log('boxStarty : ', boxStartY);
+		let insideWidget: boolean = false;
+		if (boxStartY >= viewportStartY && boxStartY <= bottomOfWidget) {
+			console.log('Inside widget');
+			insideWidget = true;
+		}
+		*/
+
 		if (verticalType === viewEvents.VerticalRevealType.Simple || verticalType === viewEvents.VerticalRevealType.Bottom) {
 			// Reveal one line more when the last line would be covered by the scrollbar - arrow down case or revealing a line explicitly at bottom
 			boxEndY += (minimalReveal ? this._horizontalScrollbarHeight : this._lineHeight);
@@ -715,7 +762,14 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 				newScrollTop = Math.max(0, boxMiddleY - viewportHeight / 2);
 			}
 		} else {
-			newScrollTop = this._computeMinimumScrolling(viewportStartY, viewportEndY, boxStartY, boxEndY, verticalType === viewEvents.VerticalRevealType.Top, verticalType === viewEvents.VerticalRevealType.Bottom);
+
+			const viewportAndStickyScrollWidgetStartY = viewportStartY;
+			/*
+			if (insideWidget) {
+				viewportAndStickyScrollWidgetStartY -= 2 * this._lineHeight;
+			}
+			*/
+			newScrollTop = this._computeMinimumScrolling(viewportAndStickyScrollWidgetStartY, viewportEndY, boxStartY, boxEndY, verticalType === viewEvents.VerticalRevealType.Top, verticalType === viewEvents.VerticalRevealType.Bottom);
 		}
 
 		return newScrollTop;

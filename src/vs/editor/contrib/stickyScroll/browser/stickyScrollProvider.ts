@@ -29,8 +29,6 @@ export class StickyLineCandidate {
 }
 
 export class StickyLineCandidateProvider extends Disposable {
-	private readonly onStickyScrollChangeEmitter = this._register(new Emitter<void>());
-	public readonly onStickyScrollChange = this.onStickyScrollChangeEmitter.event;
 
 	static readonly ID = 'store.contrib.stickyScrollController';
 	private readonly editor: ICodeEditor;
@@ -41,6 +39,9 @@ export class StickyLineCandidateProvider extends Disposable {
 	private outlineModel: StickyOutlineElement | undefined;
 	private readonly sessionStore: DisposableStore = new DisposableStore();
 	private modelVersionId: number = 0;
+
+	private readonly onStickyScrollChangeEmitter = this._register(new Emitter<void>());
+	public readonly onStickyScrollChange = this.onStickyScrollChangeEmitter.event;
 
 	constructor(
 		editor: ICodeEditor,
@@ -88,16 +89,20 @@ export class StickyLineCandidateProvider extends Disposable {
 			const model = this.editor.getModel();
 			const modelVersionId = model.getVersionId();
 			const outlineModel = await OutlineModel.create(this.languageFeaturesService.documentSymbolProvider, model, token) as OutlineModel;
+			console.log('initial outline model : ', outlineModel);
 			if (token.isCancellationRequested) {
 				return;
 			}
 			this.outlineModel = StickyOutlineElement.fromOutlineModel(outlineModel);
 			this.modelVersionId = modelVersionId;
 		}
+		console.log('outline model : ', this.outlineModel);
 	}
 
 	public getCandidateStickyLinesIntersectingFromOutline(range: StickyRange, outlineModel: StickyOutlineElement, result: StickyLineCandidate[], depth: number, lastStartLineNumber: number): void {
 		let lastLine = lastStartLineNumber;
+		// TODO binary search, go over array of visible ranges, all of them
+		// TODO we still need to hide the hidden regions
 		for (const child of outlineModel.children) {
 			if (child.range) {
 				const childStartLine = child.range.startLineNumber;

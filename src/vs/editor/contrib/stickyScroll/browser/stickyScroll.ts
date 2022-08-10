@@ -12,6 +12,7 @@ import { EditorOption, RenderLineNumbersType } from 'vs/editor/common/config/edi
 import { StickyScrollWidget, StickyScrollWidgetState } from './stickyScrollWidget';
 import { StickyLineCandidateProvider, StickyRange } from './stickyScrollProvider';
 import { IModelTokensChangedEvent } from 'vs/editor/common/textModelEvents';
+import { StickyWidgetEventHandler } from './stickyWidgetEventHandler';
 
 class StickyScrollController extends Disposable implements IEditorContribution {
 
@@ -50,6 +51,7 @@ class StickyScrollController extends Disposable implements IEditorContribution {
 			this.sessionStore.add(this.editor.onDidLayoutChange(() => this.onDidResize()));
 			this.sessionStore.add(this.editor.onDidChangeModelTokens((e) => this.onTokensChange(e)));
 			this.sessionStore.add(this.stickyLineCandidateProvider.onStickyScrollChange(() => this.renderStickyScroll()));
+			this.sessionStore.add(this.editor.onDidChangeCursorPosition(() => StickyWidgetEventHandler.fireWidgetState(this.getScrollWidgetState())));
 			const lineNumberOption = this.editor.getOption(EditorOption.lineNumbers);
 			if (lineNumberOption.renderType === RenderLineNumbersType.Relative) {
 				this.sessionStore.add(this.editor.onDidChangeCursorPosition(() => this.renderStickyScroll()));
@@ -89,7 +91,8 @@ class StickyScrollController extends Disposable implements IEditorContribution {
 			// Old _ranges not updated yet
 			return;
 		}
-		this.stickyScrollWidget.setState(this.getScrollWidgetState());
+		const widgetState = this.getScrollWidgetState();
+		this.stickyScrollWidget.setState(widgetState);
 	}
 
 	private getScrollWidgetState(): StickyScrollWidgetState {
