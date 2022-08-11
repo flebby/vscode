@@ -50,6 +50,7 @@ class StickyScrollController extends Disposable implements IEditorContribution {
 			this.sessionStore.add(this.editor.onDidScrollChange(() => this.renderStickyScroll()));
 			this.sessionStore.add(this.editor.onDidLayoutChange(() => this.onDidResize()));
 			this.sessionStore.add(this.editor.onDidChangeModelTokens((e) => this.onTokensChange(e)));
+			// onStickyScrollChange -> onChange
 			this.sessionStore.add(this.stickyLineCandidateProvider.onStickyScrollChange(() => this.renderStickyScroll()));
 			this.sessionStore.add(this.editor.onDidChangeCursorPosition(() => StickyWidgetEventHandler.fireWidgetState(this.getScrollWidgetState())));
 			const lineNumberOption = this.editor.getOption(EditorOption.lineNumbers);
@@ -93,6 +94,11 @@ class StickyScrollController extends Disposable implements IEditorContribution {
 		}
 		const widgetState = this.getScrollWidgetState();
 		this.stickyScrollWidget.setState(widgetState);
+		// 1. find the height here
+		// 2. write the height to the revealLine
+
+		// write the height of the widget to this
+		// this.editor._getViewModel().revealRangeTopOffsetInPx;
 	}
 
 	private getScrollWidgetState(): StickyScrollWidgetState {

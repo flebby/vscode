@@ -125,6 +125,7 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 	// private _nStickyLines: number;
 	// private _moreLinesThatPrev: boolean;
 
+
 	constructor(context: ViewContext, linesContent: FastDomNode<HTMLElement>) {
 		super(context);
 		this._linesContent = linesContent;
@@ -673,8 +674,8 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 	}
 
 	private _computeScrollTopToRevealRange(viewport: Viewport, source: string | null | undefined, minimalReveal: boolean, range: Range | null, selections: Selection[] | null, verticalType: viewEvents.VerticalRevealType): number {
-		const viewportStartY = viewport.top;
-		// const bottomOfWidget = viewport.top + this._widgetHeight;
+		const viewportStartY = viewport.top + this._context.viewModel.revealRangeTopOffsetInPx;
+
 		const viewportHeight = viewport.height;
 		const viewportEndY = viewportStartY + viewportHeight;
 		let boxIsSingleRange: boolean;
