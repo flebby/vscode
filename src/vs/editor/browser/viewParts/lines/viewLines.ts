@@ -165,31 +165,7 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 		this._lastRenderedData = new LastRenderedData();
 
 		this._horizontalRevealRequest = null;
-
-		// --- sticky scroll widget
-		// this._nStickyLines = 0;
-		// this._moreLinesThatPrev = false;
-		// this._widgetHeight = 0;
-		// this._register(StickyWidgetEventHandler.onStickyWidgetChange((e) => this.findWidgetData(e)));
 	}
-
-	/*
-	public findWidgetData(state: StickyScrollWidgetState): void {
-		console.log('state : ', state);
-		if (state.lineNumbers.length > this._nStickyLines) {
-			this._moreLinesThatPrev = true;
-		} else {
-			this._moreLinesThatPrev = false;
-		}
-		this._nStickyLines = state.lineNumbers.length;
-		if (state.lineNumbers.length > 0) {
-			this._widgetHeight = this._lineHeight * (state.lineNumbers.length - 1) + this._lineHeight + state.lastLineRelativePosition;
-		} else {
-			this._widgetHeight = 0;
-		}
-		console.log('widget height in findWidgetData : ', this._widgetHeight);
-	}
-	**/
 
 	public override dispose(): void {
 		this._asyncUpdateLineWidths.dispose();
@@ -674,7 +650,26 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 	}
 
 	private _computeScrollTopToRevealRange(viewport: Viewport, source: string | null | undefined, minimalReveal: boolean, range: Range | null, selections: Selection[] | null, verticalType: viewEvents.VerticalRevealType): number {
-		const viewportStartY = viewport.top + this._context.viewModel.revealRangeTopOffsetInPx;
+
+		const viewportStartY = viewport.top;
+
+		const viewModel = this._context.viewModel;
+		console.log('view model in the _computeScrollTopToRevealRange : ', viewModel);
+
+		let stickyWidgetStartY;
+		let isStickyLinesNumberIncremented;
+		let nStickyLines;
+
+		if (viewModel.stickyWidgetHeight && viewModel.isStickyLinesNumberIncremented && viewModel.nStickyLines) {
+			stickyWidgetStartY = viewport.top + viewModel.stickyWidgetHeight;
+			isStickyLinesNumberIncremented = viewModel.isStickyLinesNumberIncremented;
+			nStickyLines = viewModel.nStickyLines;
+		}
+
+		console.log('stickyWidgetHeight : ', this._context.viewModel.stickyWidgetHeight);
+		console.log('nStickyLines : ', nStickyLines);
+		console.log('stickyWidgetStartY : ', stickyWidgetStartY);
+		console.log('isStickyLinesNumberIncremented : ', isStickyLinesNumberIncremented);
 
 		const viewportHeight = viewport.height;
 		const viewportEndY = viewportStartY + viewportHeight;
@@ -714,17 +709,16 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 			}
 		}
 
-		/*
-		console.log('In _computeScrollTopToRevealRange');
+		console.log('*** In _computeScrollTopToRevealRange');
 		console.log('viewportStartY : ', viewportStartY);
-		console.log('bottomOfWidget : ', bottomOfWidget);
+		console.log('stickyWidgetStartY : ', stickyWidgetStartY);
 		console.log('boxStarty : ', boxStartY);
+
 		let insideWidget: boolean = false;
-		if (boxStartY >= viewportStartY && boxStartY <= bottomOfWidget) {
-			console.log('Inside widget');
+		if (stickyWidgetStartY && boxStartY >= viewportStartY && boxStartY <= stickyWidgetStartY) {
+			console.log('Inside the sticky widget');
 			insideWidget = true;
 		}
-		*/
 
 		if (verticalType === viewEvents.VerticalRevealType.Simple || verticalType === viewEvents.VerticalRevealType.Bottom) {
 			// Reveal one line more when the last line would be covered by the scrollbar - arrow down case or revealing a line explicitly at bottom
@@ -764,12 +758,14 @@ export class ViewLines extends ViewPart implements IVisibleLinesHost<ViewLine>, 
 			}
 		} else {
 
-			const viewportAndStickyScrollWidgetStartY = viewportStartY;
-			/*
+			let viewportAndStickyScrollWidgetStartY = viewportStartY;
 			if (insideWidget) {
-				viewportAndStickyScrollWidgetStartY -= 2 * this._lineHeight;
+				if (isStickyLinesNumberIncremented) {
+					viewportAndStickyScrollWidgetStartY -= 2 * this._lineHeight;
+				} else {
+					viewportAndStickyScrollWidgetStartY -= this._lineHeight;
+				}
 			}
-			*/
 			newScrollTop = this._computeMinimumScrolling(viewportAndStickyScrollWidgetStartY, viewportEndY, boxStartY, boxEndY, verticalType === viewEvents.VerticalRevealType.Top, verticalType === viewEvents.VerticalRevealType.Bottom);
 		}
 

@@ -28,7 +28,10 @@ export interface IViewModel extends ICursorSimpleModel {
 
 	readonly cursorConfig: CursorConfiguration;
 
-	revealRangeTopOffsetInPx: number;
+	// Sticky Scroll Widget
+	stickyWidgetHeight?: number | undefined;
+	nStickyLines?: number | undefined;
+	isStickyLinesNumberIncremented?: boolean | undefined;
 
 	addViewEventHandler(eventHandler: ViewEventHandler): void;
 	removeViewEventHandler(eventHandler: ViewEventHandler): void;

@@ -22,6 +22,10 @@ class StickyScrollController extends Disposable implements IEditorContribution {
 	private readonly stickyLineCandidateProvider: StickyLineCandidateProvider;
 	private readonly sessionStore: DisposableStore = new DisposableStore();
 
+	private nStickyLines = 0;
+	private isStickyLinesNumberIncremented = false;
+	private stickyWidgetHeight = 0;
+
 	constructor(
 		editor: ICodeEditor,
 		@ILanguageFeaturesService _languageFeaturesService: ILanguageFeaturesService,
@@ -30,6 +34,11 @@ class StickyScrollController extends Disposable implements IEditorContribution {
 		this.editor = editor;
 		this.stickyScrollWidget = new StickyScrollWidget(this.editor);
 		this.stickyLineCandidateProvider = new StickyLineCandidateProvider(this.editor, _languageFeaturesService);
+
+		// Reveal ranges issue
+		this.nStickyLines = 0;
+		this.isStickyLinesNumberIncremented = false;
+		this.stickyWidgetHeight = 0;
 
 		this._register(this.editor.onDidChangeConfiguration(e => {
 			if (e.hasChanged(EditorOption.experimental)) {
@@ -94,11 +103,29 @@ class StickyScrollController extends Disposable implements IEditorContribution {
 		}
 		const widgetState = this.getScrollWidgetState();
 		this.stickyScrollWidget.setState(widgetState);
-		// 1. find the height here
-		// 2. write the height to the revealLine
+		this.updateWidgetMeasures(widgetState);
 
-		// write the height of the widget to this
-		// this.editor._getViewModel().revealRangeTopOffsetInPx;
+		console.log('widget state : ', widgetState);
+		this.editor._getViewModel().stickyWidgetHeight = this.stickyWidgetHeight;
+		this.editor._getViewModel().nStickyLines = this.nStickyLines;
+		this.editor._getViewModel().isStickyLinesNumberIncremented = this.isStickyLinesNumberIncremented;
+
+		console.log('view model in the render :', this.editor._getViewModel());
+	}
+
+	public updateWidgetMeasures(state: StickyScrollWidgetState): void {
+		const lineHeight: number = this.editor.getOption(EditorOption.lineHeight);
+		if (state.lineNumbers.length > this.nStickyLines) {
+			this.isStickyLinesNumberIncremented = true;
+		} else {
+			this.isStickyLinesNumberIncremented = false;
+		}
+		if (state.lineNumbers.length > 0) {
+			this.stickyWidgetHeight = lineHeight * (state.lineNumbers.length - 1) + lineHeight + state.lastLineRelativePosition;
+		} else {
+			this.stickyWidgetHeight = 0;
+		}
+		this.nStickyLines = state.lineNumbers.length;
 	}
 
 	private getScrollWidgetState(): StickyScrollWidgetState {
